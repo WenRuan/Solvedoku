@@ -1,31 +1,52 @@
-import sys, pygame
+import sys, pygame, random
 from matplotlib.pyplot import text
 
-    #Temporary Grid numbers
-grid = [
-    ['', 5, 4, 6, '', 8, '', 3, 1],
-    ['', '', '', '', '', '', '', 6, ''],
-    ['', '', 3, 4, 2, '', 7, '', ''],
-    ['', '', 7, 2, 3, 4, 6, '', ''],
-    [3, 6, '', '', 9, '', 4, 8, ''],
-    ['', 4, 2, '', '', '', 3, '', 7],
-    [8, 1, '', 3, '', '', '', 2, 6],
-    ['', '', '', 5, '', '', '', '', 9],
-    ['', 2, 5, '', '', '', 8, 4, '']
-    ]
 
-gridPerm = [
-    ['', 'x', 'x', 'x', '', 'x', '', 'x', 'x'],
-    ['', '', '', '', '', '', '', 'x', ''],
-    ['', '', 'x', 'x', 'x', '', 'x', '', ''],
-    ['', '', 'x', 'x', 'x', 'x', 'x', '', ''],
-    ['x', 'x', '', '', 'x', '', 'x', 'x', ''],
-    ['', 'x', 'x', '', '', '', 'x', '', 'x'],
-    ['x', 'x', '', 'x', '', '', '', 'x', 'x'],
-    ['', '', '', 'x', '', '', '', '', 'x'],
-    ['', 'x', 'x', '', '', '', 'x', 'x', '']
-    ]
+#Reading the puzzle from a file and creating the key
+#---------------------------------------------------
+def readBoard():
+    currentPuzzle = random.randrange(0, 5)
+    minRange = currentPuzzle * 10
+    maxRange = currentPuzzle * 10 + 9
 
+    sudokuBoard = []
+    with open("Grids.txt", "r") as f:
+
+        lines = f.readlines()
+        for i in range(minRange, maxRange):
+            sudokuBoard.append(lines[i].strip().split(' '))
+        sudokuBoard = stringToInt(sudokuBoard)
+        sudokuBoard = changeBoard(sudokuBoard)
+        f.close()
+        return sudokuBoard
+
+def stringToInt(sudokuBoard):
+    for i in range(9):
+        for j in range(9):
+            sudokuBoard[i][j] = int(sudokuBoard[i][j])
+    return sudokuBoard
+
+def changeBoard(sudokuBoard):
+    for i in range(9):
+        for j in range(9):
+            if(sudokuBoard[i][j] == 0):
+                sudokuBoard[i][j] = ''
+    return sudokuBoard
+
+def createKey(sudokuBoard):
+    sudokuKey = [[0 for x in range(9)] for y in range(9)]
+    for i in range(9):
+        for j in range(9):
+            if(sudokuBoard[i][j] != ''):
+                sudokuKey[i][j] = 'x'
+            else:
+                sudokuKey[i][j] = ''
+
+    return sudokuKey
+
+
+#Setting up the game 
+#---------------------------------------------------
 board = pygame.Surface((362, 480))
 board.fill((250,250,250))
 
@@ -33,6 +54,13 @@ pygame.font.init()
 font = pygame.font.Font(None, 40)
 textfont = pygame.font.Font('OpenSans-Semibold.ttf', 16)
 blockSize = 40
+
+grid = readBoard()
+gridPerm = createKey(grid)
+
+
+#Main Game Loop
+#---------------------------------------------------
 
 def main():
 
@@ -44,6 +72,7 @@ def main():
     rectXPos = ''
     rectYPos = ''
 
+    
 
     pygame.init()
 
@@ -204,6 +233,8 @@ def main():
         pygame.display.update()
 
 
+#Solve functions
+#---------------------------------------------------
 def solvedoku(grid):
 
     if isEmpty(grid):
@@ -224,7 +255,7 @@ def solvedoku(grid):
                 pygame.draw.rect(board, (240,0,0), rect)
                 screen.blit(board, (0,0))
                 pygame.display.update()
-                pygame.time.delay(40)
+                pygame.time.delay(20)
 
                 if(solvedoku(grid)):
                     return True
@@ -240,7 +271,7 @@ def solvedoku(grid):
                     pygame.draw.rect(board, (240,0,0), rect)
                     screen.blit(board, (0,0))
                     pygame.display.update()
-                    pygame.time.delay(80)
+                    pygame.time.delay(50)
     return False
 
 def findEmpty():
@@ -258,6 +289,10 @@ def isEmpty(gridArray):
                 return False
     return True
 
+
+
+#Draw Functions
+#---------------------------------------------------
 def drawGrid():
     
     for x in range(0, 360, blockSize):
@@ -301,6 +336,10 @@ def drawInstructions():
     instructions = textfont.render("Press Enter to submit, Press Space to Solve", False, (10,10,10))
     board.blit(instructions, (15, 425))
 
+
+
+#Validation and checks 
+#---------------------------------------------------
 def checkValidMove(xPosition, yPosition, keyDown):
     for i in range(9):
         if(grid[i][yPosition] == keyDown and gridPerm[i][yPosition] == 'x'):
