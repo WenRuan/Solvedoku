@@ -26,11 +26,12 @@ gridPerm = [
     ['', 'x', 'x', '', '', '', 'x', 'x', '']
     ]
 
-board = pygame.Surface((362, 400))
+board = pygame.Surface((362, 480))
 board.fill((250,250,250))
 
 pygame.font.init()
 font = pygame.font.Font(None, 40)
+textfont = pygame.font.Font('OpenSans-Semibold.ttf', 16)
 blockSize = 40
 
 def main():
@@ -50,7 +51,7 @@ def main():
     pygame.display.set_icon(logo)
     pygame.display.set_caption("Solvedoku")
 
-    screen = pygame.display.set_mode((362,400))
+    screen = pygame.display.set_mode((362,480))
     screen.fill((250,250,250))
 
     running = True
@@ -58,6 +59,7 @@ def main():
         drawGrid()
         drawGridLines()
         drawGridNumbers()
+        drawInstructions()
         screen.blit(board, (0,0))
 
 
@@ -70,8 +72,9 @@ def main():
                 pressedGrid = pygame.mouse.get_pos()
                 rectXPos = pressedGrid[0] - (pressedGrid[0] % 40)
                 rectYPos = pressedGrid[1] - (pressedGrid[1] % 40)
-                rect = pygame.Rect(rectXPos, rectYPos, blockSize, blockSize)
-                pygame.draw.rect(board, (240,0,0), rect)
+                if(rectYPos < 360):
+                    rect = pygame.Rect(rectXPos, rectYPos, blockSize, blockSize)
+                    pygame.draw.rect(board, (240,0,0), rect)
 
             if event.type == pygame.KEYDOWN and rectXPos != '':
 
@@ -175,7 +178,6 @@ def main():
 
                 elif event.key == pygame.K_RETURN:
                     total = 0
-                    print('test')
                     for i in range(9):
                         for j in range(9):
                             if(grid[i][j] == ''):
@@ -186,20 +188,75 @@ def main():
                             else:
                                 total += grid[i][j]
                     if(total == 405):
-                        complete = font.render("Completed", True, (120, 250, 120))
+                        complete = font.render("Completed", True, (120, 120, 250))
                         completeRect = complete.get_rect()
-                        completeRect.center = (362/2, 400/2)
+                        completeRect.center = (362/2, 380)
                         board.blit(complete, completeRect)
                         running = False
                                       
+                elif event.key == pygame.K_SPACE:
+                    if(solvedoku(grid) == True):
+                        complete = font.render("Completed", True, (120, 120, 250))
+                        completeRect = complete.get_rect()
+                        completeRect.center = (362/2, 380)
+                        board.blit(complete, completeRect)
 
         pygame.display.update()
 
-        # for i in range(9):
-        #     for j in range(9):
-        #         if(grid[i][j] == ''):
-        #             running = True
-        # print("Completed")
+
+def solvedoku(grid):
+
+    if isEmpty(grid):
+        return True
+    
+    else:
+        pygame.event.pump()
+        pos = findEmpty()
+        for i in range(1, 10):
+            if(checkValid(pos[0],pos[1],i)):
+                grid[pos[0]][pos[1]] = i
+  
+                board.fill((250,250,250))
+                drawGrid()
+                drawGridLines()
+                drawGridNumbers()
+                rect = pygame.Rect((pos[0]+1)*40-40, (pos[1]+1)*40-40, blockSize, blockSize)
+                pygame.draw.rect(board, (240,0,0), rect)
+                screen.blit(board, (0,0))
+                pygame.display.update()
+                pygame.time.delay(40)
+
+                if(solvedoku(grid)):
+                    return True
+                
+                else:
+                    grid[pos[0]][pos[1]] = ''
+
+                    board.fill((250,250,250))
+                    drawGrid()
+                    drawGridLines()
+                    drawGridNumbers()
+                    rect = pygame.Rect((pos[0]+1)*40-40, (pos[1]+1)*40-40, blockSize, blockSize)
+                    pygame.draw.rect(board, (240,0,0), rect)
+                    screen.blit(board, (0,0))
+                    pygame.display.update()
+                    pygame.time.delay(80)
+    return False
+
+def findEmpty():
+    for i in range(9):
+        for j in range(9):
+            if(grid[i][j] == ''):
+                return (i,j)
+
+
+
+def isEmpty(gridArray):
+    for i in range(9):
+        for j in range(9):
+            if(gridArray[i][j] == ''):
+                return False
+    return True
 
 def drawGrid():
     
@@ -228,21 +285,27 @@ def drawGridNumbers():
         while col < 9:
             if(gridPerm[row][col] == 'x'):
                 
-                numbers = font.render(str(grid[row][col]), True, (30,30,30))
+                numbers = font.render(str(grid[row][col]), False, (30,30,30))
                 board.blit(numbers, ((row * 40 + 12), (col * 40 + 8)))
 
             else:
-                numbers = font.render(str(grid[row][col]), True, (240,0,0))
+                numbers = font.render(str(grid[row][col]), False, (240,0,0))
                 board.blit(numbers, ((row * 40 + 12), (col * 40 + 8)))
             
             col += 1
         row += 1
 
+def drawInstructions():
+    instructions = textfont.render("Click on the square and use keypad", False, (10,10,10))
+    board.blit(instructions, (40, 400))
+    instructions = textfont.render("Press Enter to submit, Press Space to Solve", False, (10,10,10))
+    board.blit(instructions, (15, 425))
+
 def checkValidMove(xPosition, yPosition, keyDown):
     for i in range(9):
         if(grid[i][yPosition] == keyDown and gridPerm[i][yPosition] == 'x'):
             return False
-        if(grid[xPosition][yPosition] == keyDown and gridPerm[xPosition][i] == 'x'):
+        if(grid[xPosition][i] == keyDown and gridPerm[xPosition][i] == 'x'):
             return False
 
     quadrant = findQuadrant(xPosition, yPosition)
@@ -251,6 +314,24 @@ def checkValidMove(xPosition, yPosition, keyDown):
         j = quadrant[1]
         while j < quadrant[1] + 3:
             if(keyDown == grid[i][j] and gridPerm[i][j] == 'x'):
+                return False
+            j += 1
+        i += 1
+    return True
+
+def checkValid(xPosition, yPosition, keyDown):
+    for i in range(9):
+        if(grid[i][yPosition] == keyDown):
+            return False
+        if(grid[xPosition][i] == keyDown):
+            return False
+
+    quadrant = findQuadrant(xPosition, yPosition)
+    i = quadrant[0]
+    while i < quadrant[0] + 3:
+        j = quadrant[1]
+        while j < quadrant[1] + 3:
+            if(keyDown == grid[i][j]):
                 return False
             j += 1
         i += 1
